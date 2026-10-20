@@ -1,0 +1,53 @@
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# 临时目录
+.tmp/
+.tmp-debris/
+*.tmp
+
+# 运行时产生的数据文件
+scores.json
+my_scores.json
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# 测试与工具缓存
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# 环境变量与密钥（绝对不能提交）
+.env
+.env.*
+!.env.example
+*.key
+secrets.json
+
+# 编辑器与系统
+# 保留 .vscode/settings.json（对项目有用），忽略其他编辑器文件
+.vscode/*
+!.vscode/settings.json
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# 数据与日志（按需保留）
+*.log
+logs/
+data/raw/
+data/private/

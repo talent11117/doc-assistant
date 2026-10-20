@@ -1,0 +1,32 @@
+{
+  // 让 VS Code 自动使用项目里的虚拟环境
+  "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+
+  // 保存文件时自动格式化、去掉多余空格
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+
+  // 终端默认编码设为 UTF-8，避免中文乱码
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "terminal.integrated.env.windows": {
+    "PYTHONIOENCODING": "utf-8"
+  },
+
+  // 编辑器显示
+  "editor.fontSize": 15,
+  "editor.tabSize": 4,
+  "editor.renderWhitespace": "boundary",
+  "editor.rulers": [88],
+
+  // 让 pytest 能被识别
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": ["."],
+
+  // 隐藏不想看到的文件夹
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/*.pyc": true
+  }
+}
