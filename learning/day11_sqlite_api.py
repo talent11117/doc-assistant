@@ -26,6 +26,7 @@ from pydantic import BaseModel, Field
 
 # 复用第 10 天的函数
 from day10_sqlite import (
+    stats,
     add_course,
     get_all,
     get_one,
@@ -108,7 +109,15 @@ def list_scores():
             result.append({"course": name, "score": score})
     """
     # TODO: 在这里写代码
-    pass
+    conn = db()
+    rows = get_all(conn)
+    result = []
+    for name,score in rows:
+        result.append({"course":name,"score":score})
+    conn.close()
+    return result
+
+
 
 
 @app.get("/scores/{course}")
@@ -133,7 +142,15 @@ def get_one_score(course: str):
         FastAPI 自动帮你从 URL 里取，不用自己解析。
     """
     # TODO: 在这里写代码
-    pass
+
+    conn = db()
+    score = get_one(conn,course)
+    if score is None:
+        raise HTTPException(status_code=404,detail="没有这门课")
+    return {"course":course,"score":score}
+
+
+
 
 
 @app.post("/scores")
@@ -160,7 +177,16 @@ def set_score(item: ScoreIn):
         传 150 分会被 FastAPI 自动拦成 422，根本进不到这个函数。
     """
     # TODO: 在这里写代码
-    pass
+    conn = db()
+    old = get_one(conn,item.course)
+    if old is None:
+        add_course(conn,item.course,item.score)
+        code = False
+    else:
+        update_score(conn,item.course,item.score)
+        code = True
+    conn.close()
+    return {"course":item.course,"score":item.score,"updated":code}
 
 
 @app.get("/stats")
@@ -181,7 +207,10 @@ def get_stats():
         需要把 stats 加到文件顶部的 import 里。
     """
     # TODO: 在这里写代码
-    pass
+    conn = db()
+    result = stats(conn)
+    conn.close()
+    return result
 
 
 # ============================================================

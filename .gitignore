@@ -25,6 +25,7 @@ dist/
 
 # 测试与工具缓存
 .pytest_cache/
+pytest-of-*/
 .ruff_cache/
 .mypy_cache/
 .coverage
@@ -45,6 +46,9 @@ secrets.json
 *.swp
 .DS_Store
 Thumbs.db
+
+# 个人学习笔记（只在本地，不进版本库）
+_notes/
 
 # 数据与日志（按需保留）
 *.log

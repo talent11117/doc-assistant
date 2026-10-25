@@ -228,8 +228,11 @@ print("  收回来：", r.json())
 #
 #     resp = requests.post(url, headers=headers, json=data)
 #
-# data 里装的是 {"model": "deepseek-chat", "messages": [...]}
+# data 里装的是 {"model": "deepseek-flash", "messages": [...]}
 # 服务器（DeepSeek）收到后，把回答放在响应体里发回来。
+#
+# 注：老教程里写的是 "deepseek-chat"，这个模型名已经下线了，
+#     现在只能用 "deepseek-flash" 或 "deepseek-v4-pro"。
 
 
 # ------------------------------------------------------------

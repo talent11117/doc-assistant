@@ -61,7 +61,20 @@ def parse_score(text):
         不检查消息内容。但写清楚一点，将来你自己看得懂。
     """
     # TODO: 在这里写代码
-    pass
+    if isinstance(text,str) is False:
+        raise ValueError(f"必须是字符串，你给的是 {type(text).__name__}")
+    if not text.strip():
+        raise ValueError(("不能是空字符串或全是空格"))
+    try:
+        score = float(text)
+    except ValueError:
+        raise ValueError(f"{text!r} 不是数字") from None
+
+    if score > 100 or score < 0:
+        raise ValueError((f"分数必须在 0-100 之间，你给的是 {score}"))
+    return score
+
+
 
 
 # ============================================================

@@ -217,7 +217,8 @@ def add_course(conn, name, score):
         conn.commit()
     """
     # TODO: 在这里写代码
-    pass
+    conn.execute("INSERT INTO courses (name,score) VALUES (?,?)",(name,score))
+    conn.commit()
 
 
 def get_all(conn):
@@ -244,7 +245,11 @@ def get_all(conn):
         return result
     """
     # TODO: 在这里写代码
-    pass
+    rows = conn.execute("SELECT name,score FROM courses ORDER BY score DESC").fetchall()
+    result =[]
+    for row in rows:
+        result.append((row["name"],row["score"]))
+    return result
 
 
 def get_one(conn, name):
@@ -263,7 +268,11 @@ def get_one(conn, name):
         而不是"这行的分数是 0"。所以不能写成 row["score"] if row else 0
     """
     # TODO: 在这里写代码
-    pass
+    rows = conn.execute("SELECT score FROM courses WHERE name = ?",(name,)).fetchone()
+    if rows is None:
+        return None
+    return rows["score"]
+
 
 
 def update_score(conn, name, score):
@@ -285,7 +294,11 @@ def update_score(conn, name, score):
         return cur.rowcount > 0
     """
     # TODO: 在这里写代码
-    pass
+    cur = conn.execute("UPDATE courses SET score = ? WHERE name = ?",(score,name))
+    conn.commit()
+    return cur.rowcount > 0
+
+
 
 
 def delete_course(conn, name):
@@ -298,7 +311,9 @@ def delete_course(conn, name):
         和 update_score 几乎一样，只是 SQL 换成 DELETE
     """
     # TODO: 在这里写代码
-    pass
+    cur = conn.execute("DELETE FROM courses WHERE name = ?",(name,))
+    conn.commit()
+    return cur.rowcount > 0
 
 
 def stats(conn):
@@ -324,7 +339,12 @@ def stats(conn):
     这是第 3 天"空字典返回什么"那个问题的续集。
     """
     # TODO: 在这里写代码
-    pass
+    row = conn.execute("SELECT COUNT(*) AS n,AVG(score)AS avg,MAX(score) AS mx FROM courses").fetchone()
+    avg = row["avg"] if row["avg"] is not None else 0
+    best_row = conn.execute("SELECT name FROM courses ORDER BY score DESC LIMIT 1").fetchone()
+    best = best_row["name"] if best_row else None
+
+    return {"count":row['n'],"average":avg,"best":best}
 
 
 # ============================================================

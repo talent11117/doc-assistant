@@ -273,7 +273,7 @@ git branch -M main
 git push -u origin main
 ```
 
-### 3.3 认证：这里会卡住你
+### 3.3 认证：你不需要手动建 PAT
 
 **GitHub 从 2021 年 8 月起不接受账号密码。** 你输密码会得到：
 
@@ -282,34 +282,72 @@ remote: Support for password authentication was removed on August 13, 2021.
 fatal: Authentication failed for 'https://github.com/...'
 ```
 
-**必须用 Personal Access Token（PAT）。**
+但**你不用去手动生成 PAT**。你的电脑上装了 **Git Credential Manager（GCM）**，版本 2.9.1，`git push` 时会自动弹浏览器让你登录。
 
-#### 生成 Token
+我验证过它工作正常：
 
-1. 打开 https://github.com/settings/tokens
-2. 点 `Generate new token` → 选 `Generate new token (classic)`
-3. 填：
-   - **Note**：`doc-assistant 本地推送`
-   - **Expiration**：`90 days`（够用了，到期重新生成）
-   - **Select scopes**：只勾 **`repo`** 这一整个大项（勾它会自动勾上下面 5 个子项）
-4. 拉到最下面点 `Generate token`
-5. **页面会显示一串 `ghp_` 开头的字符。立刻复制，关掉页面就再也看不到了。**
+```
+$ git-credential-manager diagnose
+  >>>>  Environment                    [ OK ]
+  >>>>  Credential storage             [ OK ]
+  >>>>  GitHub API                     [ OK ]
+Diagnostic summary: 7 passed, 0 skipped, 0 failed.
+```
 
-#### 推送时怎么填
+### 3.4 推送
 
 ```powershell
 git push -u origin main
 ```
 
-会弹出窗口要你输入：
+**会发生什么：**
 
-- `Username`: 你的 GitHub 用户名（不是邮箱）
-- `Password`: **粘贴那串 `ghp_` 开头的 token**（不是你的 GitHub 密码）
+1. 终端出现 `Logon failed, use ctrl+c to cancel basic credential prompt.`
+2. **弹出一个浏览器窗口**（或一个 GCM 登录窗口）
+3. 里面显示 `Sign in with your browser`，点它
+4. 浏览器跳到 GitHub，显示 **`Confirm access`** 页面（就是你截图那个）
+5. 点 `Use your password` 或 `Use GitHub Mobile`，完成验证
+6. 回到终端，推送自动继续
+
+### 关于那个 `Confirm access` 页面
+
+这是 GitHub 的 **sudo mode（提权模式）**。官方文档说明：
+
+> 为了在敏感操作前确认身份，GitHub 要求你重新认证。这些操作包括：**创建 Personal Access Token**、添加 SSH Key、删除账号、授权第三方应用等。
+> 认证后进入 sudo mode，有效期 **2 小时**，期间再做敏感操作不用重复认证。
+
+**你看到它，说明你正在做的事被 GitHub 判定为"敏感操作"**——你当时很可能在生成 PAT，或者 GCM 的 OAuth 授权被视为敏感操作。
+
+三个选项怎么选：
+
+| 选项 | 什么时候用 |
+|---|---|
+| **`Use your password`** | 最直接。点它，输你的 GitHub 登录密码，点 `Confirm` |
+| `Use GitHub Mobile` | 装了 GitHub 手机 App 才能用。打开 App 会显示数字，输进去 |
+| 2FA code | 如果你开了两步验证，用验证器 App 的 6 位数字 |
+
+**推荐点 `Use your password`。** 输一次密码就行，2 小时内不用再输。
+
+> ⚠️ 注意：这里要的是 **GitHub 登录密码**，不是 PAT，也不是 token。输对了就能过。
+
+### 如果你还是想手动建 PAT（备选方案）
+
+GCM 弹窗失败、或者你不想用浏览器认证时，可以走这条路：
+
+1. 打开 https://github.com/settings/tokens
+2. 点 `Generate new token` → 选 `Generate new token (classic)`
+3. 填：
+   - **Note**：`doc-assistant 本地推送`
+   - **Expiration**：`90 days`
+   - **Select scopes**：只勾 **`repo`** 这一整个大项
+4. 拉到最下面点 `Generate token`
+5. **页面会显示一串 `ghp_` 开头的字符。立刻复制，关掉页面就再也看不到了。**
+6. 回到终端推送，`Username` 填你的 GitHub 用户名，`Password` 粘贴那串 token
 
 > 🔒 **Token 和密码同级。** 不要贴进任何聊天、不要写进代码、不要提交到仓库。
-> 好消息：你的 `.gitconfig` 里有 `credential.helper = wincred`，Windows 会把它存进凭据管理器，**只需要输一次**。以后 push 不用再输。
+> 好消息：`credential.helper` 已配好，Windows 会把它存进凭据管理器，**只需要输一次**。以后 push 不用再输。
 
-### 3.4 推送成功的输出
+### 3.5 推送成功的输出
 
 ```
 Enumerating objects: 45, done.
@@ -324,6 +362,8 @@ branch 'main' set up to track 'origin/main'.
 ```
 
 **注意 `32.14 KiB`。** 如果是几十 MB，说明 `.venv` 被提交了，赶紧停下来处理。
+
+**最后一行的 `branch 'main' set up to track 'origin/main'.` 是关键。** 有这一行，说明 `-u` 生效了，以后直接 `git push` 就行，不用再写 `origin main`。
 
 ---
 
@@ -404,6 +444,7 @@ cd C:\Users\jack\Documents\deepseek-harness\default-workspace\doc-assistant
 检查项：
 - 本地是不是 git 仓库
 - 有没有配远程
+- **远程名字是不是 `origin`**（不是 `orgin`）
 - 远程地址是不是 GitHub
 - 提交数 ≥ 2
 - `git ls-files` 里没有 `.env` / `.venv` / `sk-`
@@ -415,14 +456,19 @@ cd C:\Users\jack\Documents\deepseek-harness\default-workspace\doc-assistant
 
 | 你看到的 | 原因 | 怎么办 |
 |---|---|---|
-| `Support for password authentication was removed` | 用了账号密码 | 用 PAT，见 3.3 |
+| **`Confirm access` 页面（要求重新验证）** | GitHub 的 sudo mode，敏感操作前要求重新认证 | 点 `Use your password`，输 GitHub 登录密码。2 小时内不用再输 |
+| `Logon failed, use ctrl+c to cancel basic credential prompt` | GCM 在启动浏览器认证 | 等浏览器弹出，在里面完成登录 |
+| `Support for password authentication was removed` | 用了账号密码 | 用 GCM 浏览器认证，或手动建 PAT，见 3.3 |
+| **`'origin' does not appear to be a git repository`** | **远程名字拼错了**（比如写成 `orgin`） | `git remote rename orgin origin`，然后用 `git remote -v` 确认 |
 | `remote origin already exists` | 之前加过 | `git remote remove origin` 再加 |
 | `failed to push some refs` | 远程有本地没有的提交 | `git pull --rebase origin main` 再推 |
 | `src refspec main does not match any` | 还没 commit | 先 `git commit` |
 | `error: src refspec main does not match any` 但明明提交了 | 分支名是 `master` 不是 `main` | `git branch -M main` |
+| `fatal: no upstream configured for branch 'main'` | 推送时漏了 `-u` | `git push -u origin main` 补一次 |
 | 推送卡住不动超过 2 分钟 | 网络问题 | Ctrl+C 中断，重试；连续 3 次失败改用 Gitee |
-| `Permission denied (publickey)` | 用了 SSH 地址但没配 SSH Key | 改用 HTTPS 地址，或去 https://help.gitee.com/repository/ssh-key 参考（GitHub 同理在 settings/keys） |
+| `Permission denied (publickey)` | 用了 SSH 地址但没配 SSH Key | 改用 HTTPS 地址 |
 | 网页上看不到最新提交 | 浏览器缓存 | Ctrl+F5 强制刷新 |
+| 网页显示空仓库 / `Git Repository is empty` | 推送还没成功 | 看终端有没有 `* [new branch] main -> main` |
 
 ---
 
@@ -430,7 +476,7 @@ cd C:\Users\jack\Documents\deepseek-harness\default-workspace\doc-assistant
 
 | 东西 | 为什么 |
 |---|---|
-| SSH Key 配置 | HTTPS + PAT 已经够用，SSH 是优化项 |
+| SSH Key 配置 | HTTPS + GCM 已经够用，SSH 是优化项 |
 | GitHub Actions（CI） | 第 14 天之后再说，现在没东西可自动化 |
 | Pull Request 流程 | 一个人写项目用不上，等团队协作再学 |
 | `.gitattributes` | 换行符高级配置，暂时用默认 |

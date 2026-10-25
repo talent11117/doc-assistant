@@ -39,7 +39,10 @@ def test_normal_input():
         但写 85.0 更能说明"我知道它返回浮点数"。
     """
     # TODO: 写 3 条 assert
-    raise NotImplementedError('这个测试还没写，写完把这行删掉')
+    assert parse_score("80") ==80.0
+    assert parse_score("0") == 0.0
+    assert parse_score("100") ==100.0
+
 
 
 # ============================================================
@@ -59,7 +62,10 @@ def test_whitespace_and_decimal():
         和测试 1 一样，只是输入多了空格和小数点。
     """
     # TODO: 写 3 条 assert
-    raise NotImplementedError('这个测试还没写，写完把这行删掉')
+    assert parse_score(" 90 ") ==90.0
+    assert parse_score("85.5") ==85.5
+    assert parse_score(" 0 ") ==0.0
+
 
 
 # ============================================================
@@ -85,7 +91,14 @@ def test_not_a_number():
         用 try/except 的话，你得自己写"没抛异常就 fail"，很啰嗦。
     """
     # TODO: 用 pytest.raises 写 3 段
-    raise NotImplementedError('这个测试还没写，写完把这行删掉')
+    with pytest.raises(ValueError):
+        parse_score("abc")
+    with pytest.raises(ValueError):
+        parse_score("")
+    with pytest.raises(ValueError):
+        parse_score("   ")
+
+
 
 
 # ============================================================
@@ -106,7 +119,13 @@ def test_out_of_range():
         这里测的是严格超出边界的值。
     """
     # TODO: 用 pytest.raises 写 3 段
-    raise NotImplementedError('这个测试还没写，写完把这行删掉')
+    with pytest.raises(ValueError):
+        parse_score("-1")
+    with pytest.raises(ValueError):
+        parse_score("101")
+    with pytest.raises(ValueError):
+        parse_score("-0.1")
+
 
 
 # ============================================================
@@ -136,4 +155,5 @@ def test_parametrized(text, expected):
         pytest 会自动填，你不用管。
     """
     # TODO: 写 1 条 assert
-    raise NotImplementedError('这个测试还没写，写完把这行删掉')
+    assert parse_score(text) == expected
+

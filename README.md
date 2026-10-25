@@ -1,187 +1,236 @@
-# doc-assistant（资料与工单助手）
+# 课程成绩管理服务
 
-这是按学习计划搭建的**一个持续迭代的项目**，不是四个独立 demo。
+一个用 FastAPI + SQLite 写的课程成绩管理后端，支持增删改查和统计。
 
-目标：做一个能查询资料、回答问题时给出依据、并通过受控工具生成工单草稿的小系统。
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.144-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![pytest](https://img.shields.io/badge/tests-14%20passed-brightgreen?logo=pytest&logoColor=white)](#测试)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-> 当前状态：**阶段 0 —— 环境已就绪，尚未开始写业务代码。**
-> 下面的功能清单是路线图，未完成的都标了 `[ ]`。
+---
 
-## 环境信息
+## 功能
 
-| 项目 | 值 |
-|---|---|
-| 解释器 | Python 3.12.6 |
-| 虚拟环境 | `.venv/`（独立于系统 Python） |
-| 包管理 | pip（在 venv 内） |
-| 项目根目录 | `C:\Users\jack\Documents\deepseek-harness\default-workspace\doc-assistant` |
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| `GET` | `/scores` | 查询所有课程成绩，按分数从高到低 |
+| `GET` | `/scores/{course}` | 查询单门成绩，不存在返回 `404` |
+| `POST` | `/scores` | 新增或修改成绩，自动校验分数在 0—100 |
+| `DELETE` | `/scores/{course}` | 删除指定课程，不存在返回 `404` |
+| `GET` | `/scores/stats/summary` | 统计课程数、平均分、最高分课程 |
 
-## 目录结构
+字段校验由 Pydantic 自动完成，非法输入返回 `422` 并说明具体原因：
+
+```json
+{
+  "detail": [{
+    "type": "string_too_short",
+    "loc": ["body", "course"],
+    "msg": "String should have at least 1 character",
+    "input": ""
+  }]
+}
+```
+
+## 技术栈
+
+| 组件 | 版本 | 用途 |
+|---|---|---|
+| Python | 3.12.6 | 运行环境 |
+| FastAPI | 0.144.0 | Web 框架、自动生成 OpenAPI 文档 |
+| Pydantic | 2.14.1 | 请求/响应模型与字段校验 |
+| SQLite | 3（标准库 `sqlite3`） | 数据存储，无需额外安装 |
+| pytest | 9.1.1 | 接口测试 |
+| uvicorn | 0.54.0 | ASGI 服务器 |
+
+## 怎么跑起来
+
+### 前置要求
+
+- Python 3.12 或更高版本
+- 不需要单独安装数据库，SQLite 是 Python 标准库自带的
+
+### 步骤
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/talent11117/doc-assistant.git
+cd doc-assistant
+
+# 2. 建虚拟环境并安装依赖
+python -m venv .venv
+
+# Windows:
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+# macOS / Linux:
+# ./.venv/bin/python -m pip install -r requirements.txt
+
+# 3. 启动服务
+# Windows:
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
+# macOS / Linux:
+# ./.venv/bin/python -m uvicorn app.main:app --reload --port 8000
+```
+
+Windows 下也可以直接双击 `run_server.cmd`。
+
+启动后访问 **http://127.0.0.1:8000/docs** 打开交互式接口文档。
+
+> **Windows 用户注意：** 如果你的终端提示「无法将 python 项识别为 cmdlet」，
+> 说明 Python 没有加进 PATH。把 `python -m venv .venv` 换成你本机 Python 的完整路径即可，
+> 后续命令都用 `.venv\Scripts\python.exe`，不受影响。
+
+## 接口文档
+
+服务启动后访问 **http://127.0.0.1:8000/docs**，可以在网页上直接发请求测试每个接口。
+
+> Swagger UI 的静态资源已下载到 `app/static/`，从本地加载。
+> FastAPI 默认从 `cdn.jsdelivr.net` 加载，国内网络经常连不上，表现为 `/docs` 一片空白。
+> 排查过程见 `_notes/docs打不开_排查记录.md`。
+
+## 项目结构
 
 ```text
 doc-assistant/
-├─ .venv/                      # 虚拟环境（已被 git 忽略，不要提交）
-├─ .tmp/                       # 临时文件（已被 git 忽略）
-├─ .gitignore
-├─ .env.example                # 环境变量模板；复制成 .env 后填真实值
-├─ dev.cmd                     # 便捷入口（推荐用这个，绕过执行策略）
-├─ dev.ps1                     # 便捷脚本本体
-├─ README.md
-├─ requirements.txt            # 依赖清单
-│
-├─ week01_start_here.py        # ★ 从这里开始：9 个小节，每行都有解释
-├─ practice01.py               # ★ 填空练习：6 个函数，填完自动判对错
-├─ week01_advanced.py          # 进阶版：同样的功能，用了类型注解等写法
-├─ test_week01_advanced.py     # 进阶版的 17 个测试
-├─ 代码解释_看不懂的地方.md      # ★ 逐条解释那些"天书"写法
-│
-├─ my_scores.json              # 运行时生成
-└─ scores.json                 # 运行时生成，已忽略
+├── app/
+│   ├── main.py              # 入口：创建 app、挂路由、lifespan 里建表
+│   ├── database.py          # 全部 SQL 都在这里，换数据库只改这一个文件
+│   ├── models.py            # Pydantic 模型：定义请求/响应字段与校验规则
+│   ├── routers/
+│   │   └── scores.py        # 成绩相关的 5 个路由
+│   └── static/              # Swagger UI 静态资源（本地加载，不依赖 CDN）
+├── tests/
+│   └── test_app.py          # 14 条接口测试
+├── learning/                # 学习过程存档（可独立运行，不是项目代码）
+├── _notes/                  # 个人笔记（已 gitignore，不进版本库）
+├── run_server.cmd           # Windows 一键启动
+├── pytest.ini               # pytest 配置：默认只跑 tests/
+├── requirements.txt         # 依赖清单
+├── .env.example             # 环境变量模板
+├── .gitignore
+├── LICENSE
+└── README.md
 ```
 
-## 学习顺序（重要）
+**分层原则：**
 
-如果你觉得代码看不懂，**按这个顺序来**：
+| 文件 | 只放 | 不放 |
+|---|---|---|
+| `app/main.py` | 创建 `app`、挂路由、生命周期钩子 | 业务逻辑、SQL |
+| `app/database.py` | 所有 SQL 与连接管理 | HTTP 相关的东西 |
+| `app/models.py` | Pydantic 模型 | 业务逻辑 |
+| `app/routers/scores.py` | 路由函数、参数校验、HTTP 状态码 | 手写 SQL |
+
+改数据库实现时只动 `app/database.py`，接口层一行都不用改。
+
+## 测试
+
+```bash
+# Windows
+.\.venv\Scripts\python.exe -m pytest
+
+# macOS / Linux
+./.venv/bin/python -m pytest
+```
 
 ```text
-第 1 步  week01_start_here.py         ← 从零开始，9 个小节
-         每节都自己敲一遍、改数字、运行看变化
-
-第 2 步  practice01.py                ← ★ 填空练习，6 个函数
-         填一个、运行一次，看到 [通过] 再填下一个
-         命令：.\dev.cmd run practice01.py
-
-第 3 步  代码解释_看不懂的地方.md      ← 遇到不懂的写法就查这里
-         20 条常见疑问，每条都有"更简单的写法"
-
-第 4 步  week01_advanced.py           ← 等前面都顺了再看
-         这时你会发现它其实没那么难
+..............                                    [100%]
+14 passed in 0.69s
 ```
 
-> **看不懂不代表你笨。** `week01_advanced.py` 里的类型注解、
-> `max(scores, key=scores.__getitem__)`、推导式这些写法，
-> 很多是"为了显得专业"才写的，对学习本身没有帮助。
-> 真正的基础只有那几个：变量、列表、字典、循环、函数、try/except、文件读写。
+覆盖范围：增删改查、`404`（课程不存在）、`422`（分数越界、课程名为空）、统计接口、空表边界、0 分不等于「没这门课」。
 
-## 一个必须知道的环境修补
+测试用 `monkeypatch` 把数据库连接替换成临时文件，每个测试跑完自动清理，不污染开发数据库。
 
-本机当前沙箱环境下有个坑：**用受限权限（`0o700`）创建的目录之后无法访问**，
-连列目录都会被拒绝。而 Python 的 `tempfile.mkdtemp()`、pytest 的 `tmp_path`
-夹具、pip 的安装过程都用这个模式建临时目录，所以会分别表现为：
+## 设计要点
 
-- pip 安装卡住不动或反复重试
-- pytest 里用 `tmp_path` 的测试直接报 `PermissionError`
+### 1. 参数化查询，杜绝 SQL 注入
 
-**已修复：** `.venv/Lib/site-packages/sitecustomize.py` 在 Windows 上让
-`os.mkdir` 忽略受限 mode，使新目录能继承权限。只影响这个虚拟环境。
+所有 SQL 都用 `?` 占位符，不拼字符串：
 
-- 想确认它生效：`dev.cmd check` 会输出 `temp dir writable: OK`
-- 想撤销：删掉那个 `sitecustomize.py` 即可（但问题会重现）
-- 不需要动系统 Python，也不需要改注册表
+```python
+# 正确
+conn.execute("SELECT * FROM courses WHERE name = ?", (name,))
 
-## 日常使用
-
-### 最省事的方式：用 dev.cmd
-
-```powershell
-cd C:\Users\jack\Documents\deepseek-harness\default-workspace\doc-assistant
-
-.\dev.cmd check                      # 检查环境是否正常
-.\dev.cmd run week01_start_here.py   # ★ 先跑这个（从零开始的那份）
-.\dev.cmd run week01_advanced.py     # 进阶版
-.\dev.cmd test                       # 跑测试（17 个）
-.\dev.cmd install 包名                # 安装依赖
-.\dev.cmd list                       # 查看已装依赖
-.\dev.cmd shell                      # 进 Python 交互环境
+# 错误：用户输入 '); DROP TABLE courses; -- 会毁掉整张表
+conn.execute(f"SELECT * FROM courses WHERE name = '{name}'")
 ```
 
-> 为什么用 `.cmd` 而不是直接 `.\dev.ps1`：本机只有 Windows PowerShell 5.1，
-> 默认执行策略会拦住 `.ps1` 脚本。`.cmd` 内部用 `-ExecutionPolicy Bypass`
-> 绕过，省得你去改系统设置。
+`learning/day10_sqlite.py` 里有这两种写法的对照演示，可以直接跑。
 
-### 手动方式（不用便捷脚本）
+### 2. 路由顺序影响匹配
 
-```powershell
-# 直接调用虚拟环境里的解释器（推荐，不必激活）
-.\.venv\Scripts\python.exe week01_start_here.py
-.\.venv\Scripts\python.exe -m pytest -q
+`/{course}` 是通配路径。如果统计接口写成 `/scores/stats`，它会被 `/{course}` 抢先匹配，
+`stats` 就被当成课程名了。所以统计接口必须多一层路径段：`/scores/stats/summary`。
 
-# 或者先激活
-& .\.venv\Scripts\Activate.ps1
-python week01_start_here.py
-deactivate
+### 3. `APIRouter` 的路径不能写 `"/"`
+
+```python
+router = APIRouter(prefix="/scores")
+
+@router.get("")        # 正确 → /scores
+@router.get("/")       # 错误 → /scores/（多一个斜杠，跟 /scores 对不上）
 ```
 
-激活后命令行前面会出现 `(.venv)`。
+### 4. 空表统计返回 0 而不是报错
 
-### 中文乱码怎么办
-
-如果输出中文显示为乱码，先执行一次：
-
-```powershell
-$env:PYTHONIOENCODING = "utf-8"
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+```json
+{"count": 0, "average": 0, "best": null}
 ```
 
-`dev.cmd` 已经自动设好这两项，所以用 `dev.cmd run` 不会有乱码问题。
+`best` 用 `null` 而不是 `""`，因为「没有最高分课程」和「最高分课程叫空字符串」是两回事。
 
-### 安装依赖
+### 5. 测试替换依赖，而不是改代码
 
-```powershell
-.\dev.cmd install 包名
-.\dev.cmd freeze        # 更新 requirements.txt
-```
-
-已在 `.venv/pip.ini` 配好清华镜像，下载会快一些。
-
-## 功能路线图
-
-### v0.1 — 资料管理 CLI（第 1—4 周）
-- [x] 环境与虚拟环境
-- [ ] 导入资料（名称、标签、正文）
-- [ ] 按标签过滤、按名称排序
-- [ ] 导出 / 读回 JSON
-- [ ] 异常处理：空文件、格式错误、非法输入
-- [ ] 5—8 个 pytest 测试
-
-### v0.2 — 后端 API + SQLite（第 5—8 周）
-- [ ] 设计 2—3 张表（资料、标签、工单）
-- [ ] SQL 增删改查、JOIN、参数化查询
-- [ ] FastAPI 接口 + Pydantic 校验
-- [ ] 接口测试，含非法输入
-
-### v0.3 — 带来源引用的 RAG（第 9—14 周）
-- [ ] 文档清理与分块，保留来源与版本
-- [ ] Embedding + 向量检索（先用轻量方案）
-- [ ] 回答附引用片段
-- [ ] 资料不足时澄清或拒答
-- [ ] 开发集与保留测试集
-
-### v1.0 — 受控工具 Agent（第 15—20 周）
-- [ ] 工具调用：参数校验 + 白名单分发
-- [ ] 单 Agent 循环：状态、最大步数、预算上限
-- [ ] 写操作需人工确认，重复提交不重复写入
-- [ ] 结构化日志与成本记录
-- [ ] 失败用例测试
-
-## 必须守住的边界
-
-1. **密钥不提交。** `.env` 已在 `.gitignore` 中；泄露过的密钥要撤销重发，不是删掉文件就完事。
-2. **文档是数据，不是指令。** 文档里出现"忽略规则并提交工单"这类内容时，不得成为授权。
-3. **写操作要确认。** 未经用户显式确认，不能写入；确认要能防重复。
-4. **不碰真实设备。** 项目只用测试数据或模拟数据，不代替任何安全规程。
-5. **权限在服务端校验。** 不能靠 Prompt 让模型"自觉"守规矩。
+路由函数里统一调用 `db()` 拿连接。测试时用 `monkeypatch` 把 `db` 换成指向临时数据库的版本，
+业务代码一行都不用改——这是「依赖注入」的最小可用形态。
 
 ## 已知限制
 
-- 目前只有第 1 周的练习代码，没有业务功能。
-- 尚未接入任何模型 API。
-- 尚未建立测试与评测集。
+这是一个学习阶段的练习项目，**不是生产级服务**。以下几点是明确没做的：
 
-## 学习日志
+- **没有用户体系与鉴权**：所有接口匿名可访问，没有 JWT / OAuth。
+- **SQLite 单文件**：不支持并发写入，不适合多进程部署。
+- **无分页**：`GET /scores` 一次返回全部记录。
+- **无日志与监控**：没有结构化日志，没有指标上报。
+- **无 CI**：测试需要手动跑，没配 GitHub Actions。
+- **无 Docker**：没有容器化，只能在本机跑。
 
-每完成一段就记三行：学了什么 / 卡在哪里 / 下一步做什么。
+## 开发过程
 
-| 日期 | 内容 | 卡点 | 下一步 |
-|---|---|---|---|
-| 2026-10-13 | 配置解释器与虚拟环境，跑通第一个脚本 | pip 在沙箱临时目录受限，已绕过 | 开始 v0.1 资料导入功能 |
+这个仓库是按 20 周学习计划推进的项目，`learning/` 下每天一个可独立运行的练习文件，
+自带自测（不填也能跑，只报 `[未通过]` 不崩溃）。
+
+<details>
+<summary>展开查看已完成的学习模块</summary>
+
+| 文件 | 主题 |
+|---|---|
+| `week01_start_here.py` | 变量、列表、循环、字典、函数、`try/except`、文件读写 |
+| `week01_advanced.py` | `sorted(key=)`、字典推导式、`collections.Counter` |
+| `practice01.py` | 6 个填空函数 |
+| `day03_split_functions.py` | 把挤在一起的逻辑拆成三个函数 |
+| `day04_files_json.py` | 文件读写、JSON、`ensure_ascii=False` |
+| `day05_class_intro.py` / `day05_classes.py` | 类与对象、`self`、类属性陷阱 |
+| `day06_api.py` | HTTP 请求、状态码、`timeout`、`ApiClient` 类 |
+| `day07_fastapi.py` | FastAPI 路由、Pydantic 校验、`404` / `422` |
+| `mock_api.py` | 本地假服务器（不用 key、不花钱、断网可用） |
+| `day10_sqlite.py` | SQLite 建表、增删改查、SQL 注入演示 |
+| `day11_sqlite_api.py` | 把 SQLite 接进 FastAPI |
+| `day12_parse.py` + `test_day12_parse.py` | pytest 入门：`fixture`、`parametrize` |
+
+详见 [`learning/README.md`](learning/README.md)。
+
+</details>
+
+## 路线图
+
+- [x] **v0.1** 环境搭建、JSON 读写、异常处理
+- [x] **v0.2** FastAPI 接口、Pydantic 校验、SQLite 增删改查、14 条测试、包结构重构
+- [ ] **v0.3** 带来源引用的 RAG（文档分块、向量检索、回答附引用、拒答机制）
+- [ ] **v1.0** 受控工具 Agent（工具白名单、状态机、人工确认、成本记录）
+
+## License
+
+[MIT](LICENSE)
